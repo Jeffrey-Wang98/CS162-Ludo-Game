@@ -2,6 +2,11 @@
 # GitHub username: Jeffrey-Wang98
 # Date: July 23, 2022
 # Description:
+
+class InvalidPositionError(Exception):
+    pass
+
+
 class Space:
     def __init__(self, position, next_space=None, home_row=None):
         self._name = position
@@ -14,42 +19,42 @@ class Board:
     def __init__(self):
         self._board = {}
         for spaces in range(56):
-            self._board[spaces + 1] = None
+            self._board[spaces] = []
         self._a_home = ["a_p", "a_q"]
         self._a_row = {
-            "A1": None,
-            "A2": None,
-            "A3": None,
-            "A4": None,
-            "A5": None,
-            "A6": None
+            "A1": [],
+            "A2": [],
+            "A3": [],
+            "A4": [],
+            "A5": [],
+            "A6": []
         }
         self._b_home = ["b_p", "b_q"]
         self._b_row = {
-            "B1": None,
-            "B2": None,
-            "B3": None,
-            "B4": None,
-            "B5": None,
-            "B6": None
+            "B1": [],
+            "B2": [],
+            "B3": [],
+            "B4": [],
+            "B5": [],
+            "B6": []
         }
         self._c_home = ["c_p", "c_q"]
         self._d_row = {
-            "C1": None,
-            "C2": None,
-            "C3": None,
-            "C4": None,
-            "C5": None,
-            "C6": None
+            "C1": [],
+            "C2": [],
+            "C3": [],
+            "C4": [],
+            "C5": [],
+            "C6": []
         }
         self._d_home = ["d_p", "d_q"]
         self._d_row = {
-            "D1": None,
-            "D2": None,
-            "D3": None,
-            "D4": None,
-            "D5": None,
-            "D6": None
+            "D1": [],
+            "D2": [],
+            "D3": [],
+            "D4": [],
+            "D5": [],
+            "D6": []
         }
         self._finish = []
         self._occupied_spaces = []
@@ -66,17 +71,20 @@ class Player:
         self._q_status = "HOME"
         self._p_steps = -1
         self._q_steps = -1
-        self._start = 1
-        self._end = 50
+        if position == "A":
+            self._start = 0
+            self._end = 49
         if position == "B":
-            self._start = 15
-            self._end = 8
-        if position == "C":
-            self._start = 29
-            self._end = 22
-        if position == "D":
-            self._start = 43
-            self._end = 36
+            self._start = 14
+            self._end = 7
+        elif position == "C":
+            self._start = 28
+            self._end = 21
+        elif position == "D":
+            self._start = 42
+            self._end = 35
+        else:
+            raise InvalidPositionError
         self._finished = False
 
     def get_completed(self):
@@ -89,8 +97,21 @@ class Player:
         return self._q_steps
 
     def get_space_name(self, total_steps):
-        current_position = (self._start + total_steps) % 56 + 1
-        pass
+        current_position = (self._start + total_steps) % 56
+        if total_steps == -1:
+            return "H"
+        if total_steps == 0:
+            return "R"
+        if self._player_pos != "A":
+            if self._start > current_position > self._end:
+                return self._player_pos + str(current_position - self._end)
+            else:
+                return str(current_position + 1)
+        else:
+            if current_position > self._end:
+                return self._player_pos + str(current_position - self._end)
+            else:
+                return str(current_position + 1)
 
 
 class LudoGame:
