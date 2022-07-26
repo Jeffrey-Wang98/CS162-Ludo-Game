@@ -27,17 +27,17 @@ class Board:
         self._occupied_spaces = []
 
     def set_finish_tokens(self, token):
-        self._finish.add(token)
+        self._finish.append(token)
 
     def remove_token(self, pos, token):
         self._board[pos].remove(token)
 
     def move_piece(self, token, start_pos, end_pos):
         if end_pos == "E":
-            self._finish.add(token)
+            self._finish.append(token)
             self._board[start_pos].remove(token)
         else:
-            self._board[end_pos].add(token)
+            self._board[end_pos].append(token)
             self._board[start_pos].remove(token)
 
 
@@ -152,10 +152,6 @@ class LudoGame:
         except TypeError:
             if end_pos == "E":
                 board.move_piece(token_name, start_pos, end_pos)
-
-
-
-
 
     def play_game(self, players_list, turns_list):
         board = Board()
