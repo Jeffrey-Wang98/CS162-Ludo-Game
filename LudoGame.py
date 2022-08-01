@@ -47,11 +47,13 @@ class Board:
                     self._board[end_pos].append(token)
                     self._board[start_pos].remove(token)
                     self._occupied_spaces.remove(start_pos)
-            else:
-                for token in self._board[end_pos]:
-                    self.move_piece(token, end_pos, "H")
+            else:  # when a token is moved to a space with hostile token(s)
+                removed_tokens = self._board[end_pos]
+                self._board[end_pos] = []  # need to remove all tokens that were occupying that space
                 self._board[end_pos].append(token)
-                self._occupied_spaces.append(end_pos)
+                self._board[start_pos].remove(token)
+                self._occupied_spaces.remove(start_pos)
+                return removed_tokens
         else:  # going to an empty space
             if end_pos == "F":  # when the token makes it to the end
                 self._finish.append(token)
@@ -101,6 +103,14 @@ class Player:
 
     def get_completed(self):
         return self._finished
+
+    def reset_status_and_steps(self, token):
+        if token.upper() == "P":
+            self._p_steps = -1
+            self._p_status = "HOME"
+        else:
+            self._q_steps = -1
+            self._q_status = "HOME"
 
     def get_player_pos(self):
         return self._player_pos
@@ -207,26 +217,29 @@ class LudoGame:
             set_token_steps(0)
             set_status("READY")
             return
-        # if start_pos == "H" or "F":  # space that the token cannot move from
-        #     print("We hit this error.")
-        #     raise InvalidToken
+        if start_pos == "H" or start_pos == "F":  # space that the token cannot move from
+            raise InvalidToken
         end_pos = player.get_space_name(end_steps)
         try:
             if end_pos < 0:
-                self._board.move_piece(token_name, start_pos, 56 + end_pos)
+                result = self._board.move_piece(token_name, start_pos, 56 + end_pos)
                 set_token_steps(56 + end_pos)
         except TypeError:
             if end_pos == "F":  # if the token lands on finish
-                self._board.move_piece(token_name, start_pos, end_pos)
+                result = self._board.move_piece(token_name, start_pos, end_pos)
                 set_token_steps(56)
                 set_status("FINISHED")
             elif start_pos == "R":  # if the token was on ready position
-                self._board.move_piece(token_name, str(player.get_start() + 1), end_pos)
+                result = self._board.move_piece(token_name, str(player.get_start() + 1), end_pos)
                 set_token_steps(end_steps)
                 set_status("ON BOARD")
             else:  # if the token was anywhere else
-                self._board.move_piece(token_name, start_pos, end_pos)
+                result = self._board.move_piece(token_name, start_pos, end_pos)
                 set_token_steps(end_steps)
+        if result is not None:
+            reset_player = self.get_player_by_position(result[0][0])
+            for token in result:
+                reset_player.reset_status_and_steps(token[2])
 
     def play_game(self, players_list, turns_list):
         board = Board()
