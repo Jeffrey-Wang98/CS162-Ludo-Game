@@ -14,6 +14,9 @@ class InvalidToken(Exception):
 class InvalidTokenPositionError(Exception):
     pass
 
+class InvalidPlayerError(Exception):
+    pass
+
 
 class Board:
     def __init__(self):
@@ -80,7 +83,7 @@ class Player:
         try:
             self._player_pos = position.upper()
         except AttributeError:
-            print("That's not a character from A - D.")
+            raise InvalidPositionError
         self._p_status = "HOME"  # "HOME", "READY", "ON BOARD", "FINISHED"
         self._q_status = "HOME"  # "HOME", "READY", "ON BOARD", "FINISHED"
         self._p_steps = -1
@@ -189,9 +192,9 @@ class LudoGame:
             if player_position.upper() in self._players:
                 return self._players[player_position.upper()]
             else:
-                return "Player not found!"
+                raise InvalidPlayerError
         except AttributeError:
-            return "Player not found!"
+            raise InvalidPlayerError
 
     def move_token(self, player, token, steps):
         try:
