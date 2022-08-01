@@ -26,6 +26,9 @@ class Board:
         self._finish = []
         self._occupied_spaces = []
 
+    def get_finish(self):
+        return self._finish
+
     def set_finish_tokens(self, token):
         self._finish.append(token)
 
@@ -33,12 +36,17 @@ class Board:
         self._board[pos].remove(token)
 
     def move_piece(self, token, start_pos, end_pos):
-        if end_pos == "E":
+        if end_pos == "F":
             self._finish.append(token)
             self._board[start_pos].remove(token)
+        elif start_pos == "H":
+            self._board[end_pos].append(token)
         else:
             self._board[end_pos].append(token)
             self._board[start_pos].remove(token)
+
+    def get_board(self):
+        return self._board
 
 
 class Player:
@@ -47,8 +55,8 @@ class Player:
             self._player_pos = position.upper()
         except AttributeError:
             print("That's not a character from A - D.")
-        self._p_status = "HOME"
-        self._q_status = "HOME"
+        self._p_status = "HOME"  # "HOME", "READY", "ON BOARD", "FINISHED"
+        self._q_status = "HOME"  # "HOME", "READY", "ON BOARD", "FINISHED"
         self._p_steps = -1
         self._q_steps = -1
         if self._player_pos == "A":
@@ -85,6 +93,24 @@ class Player:
     def set_token_q_step_count(self, new_steps):
         self._q_steps = new_steps
 
+    def get_start(self):
+        return self._start
+
+    def get_end(self):
+        return self._end
+
+    def get_p_status(self):
+        return self._p_status
+
+    def set_p_status(self, new_status):
+        self._p_status = new_status
+
+    def get_q_status(self):
+        return self._q_status
+
+    def set_q_status(self, new_status):
+        self._q_status = new_status
+
     def get_space_name(self, total_steps):
         current_position = (self._start + total_steps) % 56
         if total_steps == -1:  # when the piece is still in Home
@@ -119,6 +145,7 @@ class LudoGame:
             "C": player_c,
             "D": player_d
         }
+        self._board = Board()
 
     def get_player_by_position(self, player_position):
         try:
@@ -129,29 +156,42 @@ class LudoGame:
         except AttributeError:
             return "Player not found!"
 
-    def move_token(self, board, player, token, steps):
+    def move_token(self, player, token, steps):
         try:
             if token.upper() == "P":
                 token_name = "{}_p".format(player.get_player_pos().lower())
                 token_steps = player.get_token_p_step_count()
+                set_token_steps = player.set_token_p_step_count  # to set "P" token step count
+                set_status = player.set_p_status  # to set "P" token status
             elif token.upper() == "Q":
                 token_name = "{}_q".format(player.get_player_pos().lower())
                 token_steps = player.get_token_q_step_count()
+                set_token_steps = player.set_token_q_step_count  # to set "Q" token step count
+                set_status = player.set_q_status  # to set "Q" token status
             else:
                 raise InvalidToken
         except AttributeError:
             raise InvalidToken
         start_pos = player.get_space_name(token_steps)
         end_steps = token_steps + steps
-        if start_pos == "E" or "H" or "F" or "R":  # spaces that the token cannot move from
+        if start_pos == "F":  # space that the token cannot move from
             raise InvalidToken
+        if start_pos == "H" and steps == 6:  # we need a 6 to move this piece
+            self._board.move_piece(token_name, start_pos, player.get_start())
+            set_token_steps(0)
+            return
         end_pos = player.get_space_name(end_steps)
         try:
             if end_pos < 0:
-                end_steps += end_pos
+                self._board.move_piece(token_name, start_pos, 56 + end_pos)
+                set_token_steps(56 + end_pos)
         except TypeError:
-            if end_pos == "E":
-                board.move_piece(token_name, start_pos, end_pos)
+            if end_pos == "F":
+                self._board.move_piece(token_name, start_pos, end_pos)
+                set_token_steps(56)
+            else:
+                self._board.move_piece(token_name, start_pos, end_pos)
+                set_token_steps(end_steps)
 
     def play_game(self, players_list, turns_list):
         board = Board()
