@@ -135,7 +135,8 @@ class Board:
 class Player:
     """
     Contains the status of token "P" and token "Q" and where the starting and ending position for this player is. Also
-    contains the status of the player for finished or not finished. Will be created for each new game by LudoGame.
+    contains the status of the player for finished or not finished. Also tracks if player's pieces are doubled up.
+    Will be created for each new game by LudoGame.
     """
     def __init__(self, position):
         try:
@@ -161,6 +162,23 @@ class Player:
         else:
             raise InvalidPositionError
         self._finished = False
+        self._doubled = False  # if the pieces are on the same space and will move together
+
+    def get_doubled(self):
+        """
+        Returns True/False if the Player's pieces are doubled.
+
+        :return: True/False
+        """
+        return self._doubled
+
+    def set_doubled(self):
+        """
+        Will set self._doubled to be True so that pieces will be moved together rather than individually.
+
+        :return: None
+        """
+        self._doubled = True
 
     def get_completed(self):
         """
@@ -172,17 +190,25 @@ class Player:
 
     def reset_status_and_steps(self, token):
         """
-        When a token is sent back to home, it resets the token's step count and status to "HOME".
+        When a token is sent back to home, it resets the token's step count and status to "HOME". Will reset both tokens
+        for the player if the player is doubled.
 
         :param token: str. The token that is being reset.
         :return: None
         """
-        if token.upper() == "P":
+        if self._doubled is True:
             self._p_steps = -1
             self._p_status = "HOME"
-        else:
             self._q_steps = -1
             self._q_status = "HOME"
+            self._doubled = False
+        else:
+            if token.upper() == "P":
+                self._p_steps = -1
+                self._p_status = "HOME"
+            else:
+                self._q_steps = -1
+                self._q_status = "HOME"
 
     def get_player_pos(self):
         """
@@ -431,9 +457,10 @@ class LudoGame:
         """
         Uses a list of players "A", "B", "C", or "D" and a list of tuples for turns (player name, int steps) to move
         pieces on a Board. Will call rec_play_game() to play through the game. If play_game() is called after a previous
-        game, it will reset the board state and player token statuses to start a new game. Returns a list of str space
-        names for every space a token is occupying. With be either "H" for home space, "R" for the ready position, "E"
-        for a finished position, or a string for the specific space names on the board a token is occupying.
+        game, it will reset the board state and player token statuses to start a new game. Will set a player to doubled
+        if their pieces occupy the same space. Returns a list of str space names for every space a token is occupying.
+        With be either "H" for home space, "R" for the ready position, "E" for a finished position, or a string for the
+        specific space names on the board a token is occupying.
 
         :param players_list: list of str. List of "A", "B", "C", or "D" players.
         :param turns_list: list of tuples. Tuple is (player char, step count) for that turn.
