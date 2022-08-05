@@ -31,7 +31,8 @@ class Board:
     """
     This class controls the board state and stores each piece in a dictionary with the pace names as the keys and the
     tokens occupying those spaces as the values. Values are a list because more than one token can be on one space.
-    Also knows which pieces are in the finish and which positions on the board are occupied.
+    Also knows which pieces are in the finish and which positions on the board are occupied. LudoGame will create one
+    and recreate it for each new game. Will call move_piece() to update the Board each turn.
     """
     def __init__(self):
         self._board = {}
@@ -134,7 +135,7 @@ class Board:
 class Player:
     """
     Contains the status of token "P" and token "Q" and where the starting and ending position for this player is. Also
-    contains the status of the player for finished or not finished.
+    contains the status of the player for finished or not finished. Will be created for each new game by LudoGame.
     """
     def __init__(self, position):
         try:
