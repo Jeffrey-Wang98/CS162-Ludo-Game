@@ -2,10 +2,6 @@
 # GitHub username: Jeffrey-Wang98
 # Date: July 23, 2022
 # Description:
-
-import functools
-
-
 class InvalidPositionError(Exception):
     """
     Error for when a position other than A, B, C, or D is entered. Will not be handled since Player construction was not
@@ -82,25 +78,6 @@ class Board:
         """
         self._board[pos].remove(token)
 
-    def double_move_piece(double=False):
-        def decorator(func):
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                """
-
-
-                :param token:
-                :param start_pos
-                :param end_pos
-                :return:
-                """
-                if double:
-                    args["self"].get_board()[args["start_pos"]].append(args["token"])
-                func(*args, **kwargs)
-            return wrapper
-        return decorator
-
-    @double_move_piece()
     def move_piece(self, token, start_pos, end_pos):
         """
         Does everything to move a piece to a new space. Kicks out pieces that are already occupying the space. Removes
@@ -113,27 +90,37 @@ class Board:
         :param end_pos: str. Space name for the ending position of the token.
         :return: None, list of str, str. Depends on if we need to reset a token or to make a doubled status.
         """
+        print(self._occupied_spaces)
         if end_pos in self._occupied_spaces:  # going to an occupied space
             if token[0] in self._board[end_pos][0]:
-                if start_pos == "H":  # when the token is brought out of home
+                if start_pos == "R":  # when the token is brought out of ready
                     self._board[end_pos].append(token)
+                    self._occupied_spaces.append(end_pos)
                 else:  # when the token is moved to a space with friendly token
                     self._board[end_pos].append(token)
                     self._board[start_pos].remove(token)
                     self._occupied_spaces.remove(start_pos)
-                    return "DOUBLE"  # if we need to double the pieces
+                    self._occupied_spaces.append(end_pos)
+                print("DOUBLE!")
+                return "DOUBLE"
             else:  # when a token is moved to a space with hostile token(s)
-                if start_pos == "H":  # when the token is brought out of home
+                if start_pos == "R":  # when the token is brought out of ready
                     removed_tokens = self._board[end_pos]
+                    for _ in removed_tokens:
+                        self._occupied_spaces.remove(end_pos)
                     self._board[end_pos] = []  # need to remove all tokens that were occupying that space
                     self._board[end_pos].append(token)
-                    return removed_tokens # returns the list of tokens that need to be reset
+                    self._occupied_spaces.append(end_pos)
+                    return removed_tokens  # returns the list of tokens that need to be reset
                 else:
                     removed_tokens = self._board[end_pos]
+                    for _ in removed_tokens:
+                        self._occupied_spaces.remove(end_pos)
                     self._board[end_pos] = []  # need to remove all tokens that were occupying that space
                     self._board[end_pos].append(token)
                     self._board[start_pos].remove(token)
                     self._occupied_spaces.remove(start_pos)
+                    self._occupied_spaces.append(end_pos)
                     return removed_tokens  # returns the list of tokens that need to be reset
         else:  # going to an empty space
             if end_pos == "E":  # when the token makes it to the end
@@ -143,8 +130,8 @@ class Board:
             elif end_pos == "H":  # when the token is sent back to home
                 self._board[start_pos].remove(token)
                 self._occupied_spaces.remove(start_pos)
-            elif start_pos == "H":  # when the token is brought out of home
-                self._board[end_pos].append(token)
+            elif start_pos == "R":
+                self._board[end_pos].append(token)  # when the token is brought out of home
                 self._occupied_spaces.append(end_pos)
             else:  # when the token is moved to a new space on the board
                 self._board[end_pos].append(token)
@@ -188,17 +175,17 @@ class Player:
         self._p_steps = -1
         self._q_steps = -1
         if self._player_pos == "A":
-            self._start = 0
-            self._end = 49
+            self._start = 1
+            self._end = 50
         elif self._player_pos == "B":
-            self._start = 14
-            self._end = 7
+            self._start = 15
+            self._end = 8
         elif self._player_pos == "C":
-            self._start = 28
-            self._end = 21
+            self._start = 29
+            self._end = 22
         elif self._player_pos == "D":
-            self._start = 42
-            self._end = 35
+            self._start = 43
+            self._end = 36
         else:
             raise InvalidPositionError
         self._finished = False
@@ -391,25 +378,27 @@ class Player:
         :param total_steps: int
         :return: str or int.
         """
-        current_position = (self._start + total_steps) % 56
+        current_position = (self._start + total_steps - 1) % 56
         if total_steps == -1:  # when the piece is still in Home
             return "H"
         if total_steps == 0:  # when the piece is on the ready space
             return "R"
-        if total_steps == 56:  # when the piece hits the finish line
+        if total_steps == 57:  # when the piece hits the finish line
             return "E"
-        if total_steps > 56:  # when the piece goes past the finish line
-            return 56 - total_steps
+        if total_steps > 57:  # when the piece goes past the finish line
+            return 57 - total_steps
         if self._player_pos != "A":  # if the player is B - D
             if self._start > current_position > self._end:  # if the piece is on the home row
                 return self._player_pos + str(current_position - self._end)
             else:  # if the piece is on the shared board spaces
-                return str(current_position + 1)
+                return str(current_position)
         else:  # if the player is A
             if current_position > self._end:  # if the piece is on the home row
                 return self._player_pos + str(current_position - self._end)
+            elif current_position == 0:
+                return self._player_pos + "6"
             else:  # if the piece is on the shared board spaces
-                return str(current_position + 1)
+                return str(current_position)
 
 
 class LudoGame:
@@ -458,7 +447,7 @@ class LudoGame:
 
     def move_token(self, player, token, steps):
         """
-        Moves the specific token for a specific player for a specific # of steps. Will raise InvalidTokenError error if the
+        Moves the specific token for a specific player for a specific # of steps. Will raise InvalidTokenError if the
         wrong token is given. Calls Board.move_piece() in order to properly update the board state. Will update token
         step counts and token statuses for Player.
 
@@ -485,7 +474,6 @@ class LudoGame:
         start_pos = player.get_space_name(token_steps)
         end_steps = token_steps + steps
         if start_pos == "H" and steps == 6:  # we need a 6 to move this piece
-            self._board.move_piece(token_name, start_pos, str(player.get_start() + 1))
             set_token_steps(0)
             set_status("READY")
             return
@@ -495,15 +483,15 @@ class LudoGame:
         result = None  # assigns it a base value of None
         try:
             if end_pos < 0:
-                result = self._board.move_piece(token_name, start_pos, 56 + end_pos)
-                set_token_steps(56 + end_pos)
+                result = self._board.move_piece(token_name, start_pos, player.get_space_name(57 + end_pos))
+                set_token_steps(57 + end_pos)
         except TypeError:
             if end_pos == "E":  # if the token lands on finish
                 result = self._board.move_piece(token_name, start_pos, end_pos)
-                set_token_steps(56)
+                set_token_steps(57)
                 set_status("FINISHED")
             elif start_pos == "R":  # if the token was on ready position
-                result = self._board.move_piece(token_name, str(player.get_start() + 1), end_pos)
+                result = self._board.move_piece(token_name, start_pos, end_pos)
                 set_token_steps(end_steps)
                 set_status("ON BOARD")
             else:  # if the token was anywhere else
@@ -513,6 +501,7 @@ class LudoGame:
             if result == "DOUBLE":  # if result is set to "DOUBLE", we landed on a friendly token
                 return "DOUBLE"
             else:
+                print(result)
                 reset_player = self.get_player_by_position(result[0][0])
                 for token in result:
                     reset_player.reset_status_and_steps(token[2])
@@ -565,7 +554,7 @@ class LudoGame:
                         return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
 
         if player.get_doubled():  # if we just move both tokens together
-            self.move_token(player, "p", steps, True)
+            self.move_token(player, "p", steps)
             self.move_token(player, "q", steps)
             return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
 
