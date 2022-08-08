@@ -230,7 +230,10 @@ class Player:
 
         :return: True/False
         """
-        return self._finished
+        complete = False
+        if self._finished or (self._p_status == "FINISHED" and self._q_status == "FINISHED"):
+            complete = True
+        return complete
 
     def set_completed(self):
         """
@@ -372,7 +375,7 @@ class Player:
     def get_space_name(self, total_steps):
         """
         Uses a step count as a parameter or the step count for a future move. Will calculate the exact space name for
-        either the current position or the future position of a token. If total_steps is more than 56, it will return
+        either the current position or the future position of a token. If total_steps is more than 57, it will return
         a negative int for the number of steps a token must go back on.
 
         :param total_steps: int
@@ -654,6 +657,10 @@ class LudoGame:
                     return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
                 except InvalidTokenError:
                     pass
+
+        # Last check to see if Player is done after doing all these moves
+        if player.get_p_status == "FINISHED" and player.get_q_status == "FINISHED":
+            player.set_completed()
 
         return self.rec_play_game(players_list, turns_list, pos + 1)  # if all else can't be done
 
