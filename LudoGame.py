@@ -444,9 +444,9 @@ class LudoGame:
             if player_position.upper() in self._players:
                 return self._players[player_position.upper()]
             else:
-                raise InvalidPlayerError
+                return "Player not found!"
         except AttributeError:
-            raise InvalidPlayerError
+            return "Player not found!"
 
     def move_token(self, player, token, steps):
         """
