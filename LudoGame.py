@@ -442,7 +442,10 @@ class LudoGame:
         """
         try:
             if player_position.upper() in self._players:
-                return self._players[player_position.upper()]
+                if self._players[player_position.upper()].get_in_play() is False:
+                    return "Player not found!"
+                else:
+                    return self._players[player_position.upper()]
             else:
                 return "Player not found!"
         except AttributeError:
@@ -529,7 +532,7 @@ class LudoGame:
         try:  # is this turn a valid player turn?
             player = self.get_player_by_position(player_char)
             print(player.get_doubled())
-        except InvalidPlayerError:  # skip this turn if not
+        except AttributeError:  # skip this turn if not
             return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
 
         if player.get_in_play() is False:  # is this Player in the game?
