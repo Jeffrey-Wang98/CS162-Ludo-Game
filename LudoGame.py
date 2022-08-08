@@ -90,7 +90,6 @@ class Board:
         :param end_pos: str. Space name for the ending position of the token.
         :return: None, list of str, str. Depends on if we need to reset a token or to make a doubled status.
         """
-        print(self._occupied_spaces)
         if end_pos in self._occupied_spaces:  # going to an occupied space
             if token[0] in self._board[end_pos][0]:
                 if start_pos == "R":  # when the token is brought out of ready
@@ -101,7 +100,6 @@ class Board:
                     self._board[start_pos].remove(token)
                     self._occupied_spaces.remove(start_pos)
                     self._occupied_spaces.append(end_pos)
-                print("DOUBLE!")
                 return "DOUBLE"
             else:  # when a token is moved to a space with hostile token(s)
                 if start_pos == "R":  # when the token is brought out of ready
@@ -507,7 +505,6 @@ class LudoGame:
             if result == "DOUBLE":  # if result is set to "DOUBLE", we landed on a friendly token
                 return "DOUBLE"
             else:
-                print(result)
                 reset_player = self.get_player_by_position(result[0][0])
                 for token in result:
                     reset_player.reset_status_and_steps(token[2])
@@ -523,15 +520,12 @@ class LudoGame:
         :param pos: int. Position in turns_list.
         :return: None
         """
-        print("Move {}".format(pos + 1))
-        print(self._board.get_occupied_spaces())
         if pos >= len(turns_list):  # base case for stopping the game
             return
         player_char, steps = turns_list[pos]  # assigning the tuple variables
 
         try:  # is this turn a valid player turn?
             player = self.get_player_by_position(player_char)
-            print(player.get_doubled())
         except AttributeError:  # skip this turn if not
             return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
 
@@ -578,26 +572,19 @@ class LudoGame:
         p_future_space = player.get_space_name(p_steps + steps)
         q_future_space = player.get_space_name(q_steps + steps)
         if p_future_space == "E":  # if this will move "p" to the end
-            print("We're checking if p can reach the end.")
             self.move_token(player, "p", steps)
             return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
         if q_future_space == "E":  # if this will move "q" to the end.
-            print("We're checking if q can reach the end.")
             self.move_token(player, "q", steps)
             return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
 
         occupied_spaces = self._board.get_occupied_spaces()
         if p_future_space in occupied_spaces or q_future_space in occupied_spaces:  # check to kick opponent out
-            print("We're checking if they can kick opponents")
             p_kick = False
             q_kick = False
             if p_steps + steps != q_steps and p_future_space in occupied_spaces:  # will kick opponent not double
-                print(p_future_space)
-                print("We can kick with p")
                 p_kick = True
             if q_steps + steps != p_steps and q_future_space in occupied_spaces:  # will kick opponent not double
-                print(q_future_space)
-                print("We can kick with q")
                 q_kick = True
             if p_kick and q_kick:  # find the furthest token if both can kick opponents out
                 if p_steps < q_steps:  # p is further back than q
@@ -626,18 +613,14 @@ class LudoGame:
                     except InvalidTokenError:
                         pass
 
-        print("p steps = {}".format(p_steps))
-        print("q steps = {}".format(q_steps))
         if p_steps < q_steps:  # p token is the furthest behind
             try:
-                print("We moved p")
                 results = self.move_token(player, "p", steps)
                 if results == "DOUBLE":  # will double up the player if this makes them doubled
                     player.set_doubled()
                 return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
             except InvalidTokenError:
                 try:
-                    print("We moved q")
                     results = self.move_token(player, "q", steps)
                     if results == "DOUBLE":  # will double up the player if this makes them doubled
                         player.set_doubled()
@@ -646,14 +629,12 @@ class LudoGame:
                     pass
         else:  # q token is the furthest behind
             try:
-                print("We moved q")
                 results = self.move_token(player, "q", steps)
                 if results == "DOUBLE":  # will double up the player if this makes them doubled
                     player.set_doubled()
                 return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
             except InvalidTokenError:
                 try:
-                    print("We moved p")
                     results = self.move_token(player, "p", steps)
                     if results == "DOUBLE":  # will double up the player if this makes them doubled
                         player.set_doubled()
