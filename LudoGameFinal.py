@@ -435,7 +435,7 @@ class LudoGame:
             for token in result:
                 reset_player.reset_status_and_steps(token[2])
 
-    def rec_play_game(self, players_list, turns_list, player_turn, second_turn):
+    def rec_play_game(self, players_list, turns_list, pos):
         """
         Recursive function that loops through the turns_list and players_list to alternate turns and skip turns if the
         move is invalid. Will NOT do this for the assignment but for the future "finished" state of the game for the
@@ -443,13 +443,136 @@ class LudoGame:
 
         :param players_list: list of str. List of "A", "B", "C", or "D" players.
         :param turns_list: list of tuples. Tuple is (player char, step count) for that turn.
-        :param player_turn: str. The player char whose turn it is. (Will not be used for the assignment for ease in
-        grading)
-        :param second_turn: True/False. If the previous turn was this player's turn and gets a second turn because
-        they rolled a 6. (Will not be used for the assignment for ease in grading)
+        :param pos: int. Position in turns_list.
         :return: None
         """
-        pass
+        if pos >= len(turns_list):  # base case for stopping the game
+            return
+        player_char, steps = turns_list[pos]  # assigning the tuple variables
+
+        try:  # is this turn a valid player turn?
+            player = self.get_player_by_position(player_char)
+        except AttributeError:  # skip this turn if not
+            return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+
+        if player.get_in_play() is False:  # is this Player in the game?
+            return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+
+        if player.get_completed():  # if this player is all done
+            return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+
+        if player.get_p_status == "FINISHED" or player.get_q_status == "FINISHED":
+            if player.get_p_status == "FINISHED" and player.get_q_status == "FINISHED":
+                player.set_completed()
+                return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+            else:
+                if player.get_p_status == "FINISHED":  # p is already done
+                    try:
+                        self.move_token(player, "q", steps)
+                        return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+                    except InvalidTokenError:  # can't move this token
+                        return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+                else:  # q is already done
+                    try:
+                        self.move_token(player, "p", steps)
+                        return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+                    except InvalidTokenError:  # can't move this token
+                        return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+
+        if player.get_doubled():  # if we just move both tokens together
+            self.move_token(player, "p", steps)
+            self.move_token(player, "q", steps)
+            return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+
+        if steps == 6:  # checking of there are any tokens in Home
+            if player.get_p_status() == "HOME":
+                self.move_token(player, "p", steps)
+                return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+            if player.get_q_status() == "HOME":
+                self.move_token(player, "q", steps)
+                return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+
+        p_steps = player.get_token_p_step_count()
+        q_steps = player.get_token_q_step_count()
+
+        p_future_space = player.get_space_name(p_steps + steps)
+        q_future_space = player.get_space_name(q_steps + steps)
+        if p_future_space == "E":  # if this will move "p" to the end
+            self.move_token(player, "p", steps)
+            return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+        if q_future_space == "E":  # if this will move "q" to the end.
+            self.move_token(player, "q", steps)
+            return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+
+        occupied_spaces = self._board.get_occupied_spaces()
+        if p_future_space in occupied_spaces or q_future_space in occupied_spaces:  # check to kick opponent out
+            p_kick = False
+            q_kick = False
+            if p_steps + steps != q_steps and p_future_space in occupied_spaces:  # will kick opponent not double
+                p_kick = True
+            if q_steps + steps != p_steps and q_future_space in occupied_spaces:  # will kick opponent not double
+                q_kick = True
+            if p_kick and q_kick:  # find the furthest token if both can kick opponents out
+                if p_steps < q_steps:  # p is further back than q
+                    try:
+                        self.move_token(player, "p", steps)
+                        return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+                    except InvalidTokenError:
+                        pass
+                else:  # q is further back than p
+                    try:
+                        self.move_token(player, "q", steps)
+                        return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+                    except InvalidTokenError:
+                        pass
+            else:  # only one of them can kick an opponent out
+                if p_kick:  # p will kick opponent out
+                    try:
+                        self.move_token(player, "p", steps)
+                        return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+                    except InvalidTokenError:
+                        pass
+                if q_kick:  # q will kick opponent out
+                    try:
+                        self.move_token(player, "q", steps)
+                        return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+                    except InvalidTokenError:
+                        pass
+
+        if p_steps < q_steps:  # p token is the furthest behind
+            try:
+                results = self.move_token(player, "p", steps)
+                if results == "DOUBLE":  # will double up the player if this makes them doubled
+                    player.set_doubled()
+                return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+            except InvalidTokenError:
+                try:
+                    results = self.move_token(player, "q", steps)
+                    if results == "DOUBLE":  # will double up the player if this makes them doubled
+                        player.set_doubled()
+                    return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+                except InvalidTokenError:
+                    pass
+        else:  # q token is the furthest behind
+            try:
+                results = self.move_token(player, "q", steps)
+                if results == "DOUBLE":  # will double up the player if this makes them doubled
+                    player.set_doubled()
+                return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+            except InvalidTokenError:
+                try:
+                    results = self.move_token(player, "p", steps)
+                    if results == "DOUBLE":  # will double up the player if this makes them doubled
+                        player.set_doubled()
+                    return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
+                except InvalidTokenError:
+                    pass
+
+        # Last check to see if Player is done after doing all these moves
+        if player.get_p_status == "FINISHED" and player.get_q_status == "FINISHED":
+            player.set_completed()
+
+        return self.rec_play_game(players_list, turns_list, pos + 1)  # if all else can't be done
 
     def play_game(self, players_list, turns_list):
         """
@@ -464,3 +587,18 @@ class LudoGame:
         :param turns_list: list of tuples. Tuple is (player char, step count) for that turn.
         :return: list of str.
         """
+        self._board.reset_board()
+        for player in self._players:
+            self._players[player].reset_player()
+        players_list.sort()
+        for char in players_list:
+            self._players[char.upper()].start()
+        self.rec_play_game(players_list, turns_list, 0)  # starts the game
+        # now we start to compile the board state to return the occupied board spaces.
+        positions = []
+        for char in players_list:
+            p_steps = self._players[char].get_token_p_step_count()
+            q_steps = self._players[char].get_token_q_step_count()
+            positions.append(self._players[char].get_space_name(p_steps))
+            positions.append(self._players[char].get_space_name(q_steps))
+        return positions

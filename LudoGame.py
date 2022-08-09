@@ -1,7 +1,11 @@
 # Author: Jeffrey Wang
 # GitHub username: Jeffrey-Wang98
 # Date: July 23, 2022
-# Description:
+# Description: A fully coded LudoGame file with multiple Exception classes to help with exception handling. There's a
+# Board class that is a data structure representation of the board state and locations of each Player's tokens. There's
+# a Player class to contain the token information and methods to access that information. There's a LudoGame class that
+# controls which Players are playing, which Board object is used, and how to execute turns from the turns list.
+
 class InvalidPositionError(Exception):
     """
     Error for when a position other than A, B, C, or D is entered. Will not be handled since Player construction was not
@@ -14,14 +18,6 @@ class InvalidTokenError(Exception):
     """
     Error for move_token() when an invalid token is chosen for movement. Will be handled by play_game() to skip
     that turn
-    """
-    pass
-
-
-class InvalidPlayerError(Exception):
-    """
-    Error for when something other than A, B, C, or D is given for a turn that's not theirs to move. Will be handled by
-    play_game() to skip that turn.
     """
     pass
 
