@@ -394,8 +394,8 @@ class Player:
         else:  # if the player is A
             if current_position > self._end:  # if the piece is on the home row
                 return self._player_pos + str(current_position - self._end)
-            elif current_position == 0:
-                return self._player_pos + "6"
+            elif current_position == 0:  # since 56 becomes 0 from our % operator
+                return "A6"
             else:  # if the piece is on the shared board spaces
                 return str(current_position)
 
@@ -680,11 +680,11 @@ class LudoGame:
         :param turns_list: list of tuples. Tuple is (player char, step count) for that turn.
         :return: list of str.
         """
-        self._board.reset_board()
-        for player in self._players:
+        self._board.reset_board()  # resets every list in Board
+        for player in self._players:  # resets every Player object
             self._players[player].reset_player()
-        players_list.sort()
-        for char in players_list:
+        players_list.sort()  # sorts the players list in the correct order
+        for char in players_list:  # activates Players that are in this particular game
             self._players[char.upper()].start()
         self.rec_play_game(players_list, turns_list, 0)  # starts the game
         # now we start to compile the board state to return the occupied board spaces.
