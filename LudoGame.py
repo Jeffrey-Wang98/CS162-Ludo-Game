@@ -229,7 +229,7 @@ class Player:
             complete = True
         return complete
 
-    def set_completed(self):
+    def set_finished(self):
         """
         Sets the Player self._finished to True
 
@@ -385,7 +385,9 @@ class Player:
         if total_steps > 57:  # when the piece goes past the finish line
             return 57 - total_steps
         if self._player_pos != "A":  # if the player is B - D
-            if self._start > current_position > self._end:  # if the piece is on the home row
+            if current_position == 0:  # since 56 becomes 0 from our % operator
+                return str(56)
+            elif self._start > current_position > self._end:  # if the piece is on the home row
                 return self._player_pos + str(current_position - self._end)
             else:  # if the piece is on the shared board spaces
                 return str(current_position)
@@ -417,6 +419,25 @@ class LudoGame:
             "D": player_d
         }
         self._board = Board()
+        self._winners = []
+
+    def set_winners(self, winner):
+        """
+        Appends the character to the list of winners. Character is either "A", "B", "C", or "D".
+
+        :param winner: str. The character of the winner you want to put into self._winners.
+        :return: None
+        """
+        self._winners.append(winner)
+
+    def get_winners(self):
+        """
+        Returns the list of winners in the order they won. Will not include the last player whose tokens did not both
+        make it to the end.
+
+        :return: list of str.
+        """
+        return self._winners
 
     def get_board(self):
         """
@@ -518,6 +539,8 @@ class LudoGame:
         """
         if pos >= len(turns_list):  # base case for stopping the game
             return
+        if len(self._winners) == len(players_list) - 1:  # base case for every Player but 1 finishes
+            return
         player_char, steps = turns_list[pos]  # assigning the tuple variables
 
         try:  # is this turn a valid player turn?
@@ -533,7 +556,7 @@ class LudoGame:
 
         if player.get_p_status == "FINISHED" or player.get_q_status == "FINISHED":
             if player.get_p_status == "FINISHED" and player.get_q_status == "FINISHED":
-                player.set_completed()
+                player.set_finished()
                 return self.rec_play_game(players_list, turns_list, pos + 1)  # done with this turn
             else:
                 if player.get_p_status == "FINISHED":  # p is already done
@@ -639,8 +662,8 @@ class LudoGame:
                     pass
 
         # Last check to see if Player is done after doing all these moves
-        if player.get_p_status == "FINISHED" and player.get_q_status == "FINISHED":
-            player.set_completed()
+        if player.get_completed():
+            self._winners.append(player_char)
 
         return self.rec_play_game(players_list, turns_list, pos + 1)  # if all else can't be done
 
